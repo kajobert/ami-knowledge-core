@@ -173,7 +173,9 @@ async function renderSources() {
 
 async function renderClaims() {
   const claims = await api("/api/claims");
-  workspace.innerHTML = `<h2>Claims</h2>${
+  const demoNote =
+    "<p class='muted'>Preview uses sanitized archaeology fixtures only. Claims appear after worker extraction; absence of real private archaeology is expected until host ingest.</p>";
+  workspace.innerHTML = `<h2>Claims</h2>${demoNote}${
     claims.length
       ? claims
           .map(
@@ -194,6 +196,25 @@ async function renderClaims() {
 async function renderTimeline() {
   const events = await api("/api/timeline");
   workspace.innerHTML = `<h2>Timeline</h2><pre>${JSON.stringify(events, null, 2)}</pre>`;
+}
+
+async function renderWorkerStatus() {
+  const [status, jobs, ingestRuns] = await Promise.all([
+    api("/api/worker/status"),
+    api("/api/worker/jobs?limit=20"),
+    api("/api/ingest/runs"),
+  ]);
+  workspace.innerHTML = `
+    <h2>Continuous Archaeology Worker</h2>
+    <p class="muted">Per-source checkpoints · no auto-canonical promotion</p>
+    <h3>Job states</h3>
+    <pre>${JSON.stringify(status.jobs_by_state, null, 2)}</pre>
+    <h3>Recent worker runs</h3>
+    <pre>${JSON.stringify(status.recent_runs, null, 2)}</pre>
+    <h3>Recent jobs</h3>
+    <pre>${JSON.stringify(jobs, null, 2)}</pre>
+    <h3>Ingest runs</h3>
+    <pre>${JSON.stringify(ingestRuns, null, 2)}</pre>`;
 }
 
 async function renderSearchResults(query) {
@@ -228,6 +249,7 @@ async function renderView() {
   if (state.view === "sources") await renderSources();
   if (state.view === "claims") await renderClaims();
   if (state.view === "timeline") await renderTimeline();
+  if (state.view === "worker") await renderWorkerStatus();
 }
 
 document.querySelectorAll("#sidebar button").forEach((button) => {
@@ -255,4 +277,3 @@ document.getElementById("global-search").addEventListener("submit", async (event
   }
   await renderView();
 })();
-
